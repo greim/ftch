@@ -1,0 +1,14 @@
+{
+  "name": "xfetch",
+  "version": "0.1.0",
+  "description": "Extendable Fetch",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "mocha $(find src -name \"*.test.js\")"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^1.10.1"
+  }
+}
