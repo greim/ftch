@@ -25,16 +25,14 @@ function write(writable, body) {
   if (!body) {
     writable.end('');
   } else if (typeof body === 'string') {
-    writable.setEncoding('utf8');
-    writable.end(body);
+    writable.end(body, 'utf8');
   } else if (Buffer.isBuffer(body)) {
     writable.end(body);
-  } else if (typeof writable === 'object') {
-    if (typeof writable.pipe === 'function') {
+  } else if (typeof body === 'object') {
+    if (typeof body.pipe === 'function') {
       body.pipe(writable);
     } else {
-      writable.setEncoding('utf8');
-      writable.end(JSON.stringify(body));
+      writable.end(JSON.stringify(body), 'utf8');
     }
   } else {
     const err = new TypeError('Unsupported body type');

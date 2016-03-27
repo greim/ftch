@@ -1,5 +1,5 @@
 {
-  "name": "xfetch",
+  "name": "XXX",
   "version": "0.1.0",
   "description": "Extendable Fetch",
   "main": "src/index.js",
@@ -9,6 +9,12 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "eslint": "^1.10.1"
+    "eslint": "^1.10.1",
+    "sinon": "^1.17.3",
+    "string-to-stream": "^1.0.1"
+  },
+  "dependencies": {
+    "express-uri-template": "^0.1.0",
+    "lodash": "^4.6.1"
   }
 }

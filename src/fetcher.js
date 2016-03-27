@@ -3,45 +3,67 @@
 const urlTools = require('url');
 const fetch = require('./fetch');
 const Telemetry = require('./telemetry');
-const defaultOpts = require('./default-options');
 
 class Fetcher {
 
-  constructor(url, opts) {
-    const merged = extendArgs('http://localhost/', defaultOpts, url, opts);
-    this._ = merged;
+  constructor(url, params, opts) {
+    this._ = { url, params, opts };
   }
 
-  fetch(url, opts) {
-    const merged = extendArgs(this._.url, this._.opts, url, opts);
-    const telemetry = new Telemetry(merged, merged.opts.events);
-    return fetch(merged.url, merged.opts, telemetry);
+  fetch(url, params, opts) {
+    const args = resolveArgs(url, params, opts);
+    const merged = extendArgs(this._, args);
+    const telemetry = new Telemetry(merged);
+    return fetch(merged.url, merged.params, merged.opts, telemetry);
   }
 
-  fetchJson(url, opts) {
-    return this.fetch(url, opts).then(res => res.json());
-  }
-
-  fetchText(url, opts) {
-    return this.fetch(url, opts).then(res => res.text());
-  }
-
-  extend(url, opts) {
-    const merged = extendArgs(this._.url, this._.opts, url, opts);
-    return new Fetcher(merged.url, merged.opts);
+  extend(url, params, opts) {
+    const args = resolveArgs(url, params, opts);
+    const merged = extendArgs(this._, args);
+    return new Fetcher(merged.url, merged.params, merged.opts);
   }
 }
 
 module.exports = Fetcher;
 
-function extendArgs(baseUrl, baseOpts, url, opts) {
+function resolveArgs(url, params, opts) {
+  if (typeof url !== 'string') {
+    opts = params;
+    params = url;
+    url = '';
+  }
   opts = opts || {};
   opts.headers = opts.headers || {};
-  const finalUrl = urlTools.resolve(baseUrl, url);
-  const finalHeaders = Object.assign({}, baseOpts.headers, opts.headers);
-  const finalOpts = Object.assign({}, baseOpts, opts);
-  finalOpts.headers = finalHeaders;
-  Object.freeze(finalOpts.headers);
-  Object.freeze(finalOpts);
-  return Object.freeze({ opts: finalOpts, url: finalUrl });
+  opts.query = opts.query || {};
+  params = params || {};
+  url = url || '';
+  return { opts, params, url };
+}
+
+function extendArgs(parent, child) {
+  const merged = {};
+  merged.url = urlTools.resolve(parent.url, child.url);
+  merged.params = Object.assign({}, parent.params, child.params);
+  merged.opts = Object.assign({}, parent.opts, child.opts);
+  merged.opts.headers = Object.assign({}, parent.opts.headers, child.opts.headers);
+  merged.opts.query = Object.assign({}, parent.opts.query, child.opts.query);
+  const parTel = getAsArr(parent.telemetry);
+  const chiTel = getAsArr(child.telemetry);
+  merged.telemetry = parTel.concat(chiTel);
+  if (merged.telemetry.length === 0) {
+    delete merged.telemetry;
+  } else if (merged.telemetry.length === 1) {
+    merged.telemetry = merged.telemetry[0];
+  }
+  return merged;
+}
+
+function getAsArr(thing) {
+  if (!thing) {
+    return [];
+  } else if (!Array.isArray(thing)) {
+    return [thing];
+  } else {
+    return thing;
+  }
 }

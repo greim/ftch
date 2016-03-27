@@ -5,15 +5,15 @@ const http = require('http');
 const request = require('./request');
 const followRedirects = require('./follow-redirects');
 const spatts = require('./status-patterns');
-const dashify = require('./dashify');
-const defaultOpts = require('./default-options');
+const urlTemplate = require('./url-template');
 
 const alrighty = Promise.resolve();
 
-module.exports = function fetch(url, opts, telemetry) {
+module.exports = function fetch(urlTpl, params, opts, telemetry) {
   return alrighty.then(() => {
+    const url = urlTemplate(urlTpl, params);
     const pUrl = urlTools.parse(url);
-    const headers = getHeaders(opts);
+    const headers = opts.headers;
     telemetry.set('requestHeaders', headers);
     telemetry.emit('start');
     const reqOpts = getRequestOpts(pUrl, opts, headers);
@@ -27,9 +27,15 @@ module.exports = function fetch(url, opts, telemetry) {
     telemetry.set('responseHeaders', resp.headers);
     telemetry.emit('received');
     if (opts.successOnly) { checkSuccess(resp, opts); }
-    resp.text = textifier(resp, telemetry);
-    resp.json = jsonifier(resp, telemetry);
-    return resp;
+    if (opts.as === 'text') {
+      return textify(resp, telemetry);
+    } else if (opts.as === 'json') {
+      return jsonify(resp, telemetry);
+    } else if (opts.as === 'buffer') {
+      return bufferify(resp, telemetry);
+    } else {
+      return resp;
+    }
   });
 };
 
@@ -55,36 +61,43 @@ function checkSuccess(resp) {
   }
 }
 
-function textifier(resp, telemetry) {
-  return function text() {
-    return collect(resp).then(txt => {
-      telemetry.set('responseBody', txt);
-      telemetry.emit('buffered');
-      return txt;
-    });
-  };
+function textify(resp, telemetry) {
+  return collect(resp).then(chunks => {
+    const buffer = Buffer.concat(chunks);
+    const str = buffer.toString('utf8');
+    telemetry.set('responseBody', str);
+    telemetry.emit('buffered');
+    return str;
+  });
 }
 
-function jsonifier(resp, telemetry) {
-  return function text() {
-    return collect(resp).then(txt => {
-      const obj = JSON.parse(txt);
-      telemetry.set('responseBody', obj);
-      telemetry.emit('buffered');
-      return obj;
-    });
-  };
+function jsonify(resp, telemetry) {
+  return collect(resp).then(chunks => {
+    const buffer = Buffer.concat(chunks);
+    const str = buffer.toString('utf8');
+    const obj = JSON.parse(str);
+    telemetry.set('responseBody', obj);
+    telemetry.emit('buffered');
+    return obj;
+  });
+}
+
+function bufferify(resp, telemetry) {
+  return collect(resp).then(chunks => {
+    const buffer = Buffer.concat(chunks);
+    telemetry.set('responseBody', buffer);
+    telemetry.emit('buffered');
+    return buffer;
+  });
 }
 
 function collect(readable) {
   return new Promise((resolve, reject) => {
-    readable.setEncoding('utf8');
     const chunks = [];
     readable.on('error', reject);
     readable.on('data', chunk => chunks.push(chunk));
     readable.on('end', () => {
-      const txt = chunks.join('');
-      resolve(txt);
+      resolve(chunks);
     });
   });
 }
@@ -98,17 +111,4 @@ function getRequestOpts(pUrl, opts, headers) {
     path: pUrl.path,
     headers: headers,
   };
-}
-
-function getHeaders(opts) {
-  const headers = {};
-  for (const prop of Object.keys(opts)) {
-    if (!defaultOpts.hasOwnProperty(prop)) {
-      headers[dashify(prop)] = opts[prop];
-    }
-  }
-  if (typeof opts.headers === 'object') {
-    Object.assign(headers, opts.headers);
-  }
-  return headers;
 }

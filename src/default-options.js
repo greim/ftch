@@ -5,6 +5,7 @@ module.exports = Object.freeze({
   successOnly: true,
   method: 'GET',
   body: null,
-  events: null,
+  telemetry: null,
   headers: Object.freeze({}),
+  query: {}
 });
