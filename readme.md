@@ -1,20 +1,20 @@
 **Warning, Experimental** I haven't written tests or anything for this yet, and it almost certainly won't work if you try to use it. Check back soon.
 
-# XXX - Secure, Extendable Fetching with Telemetry
+# ftch - Secure, Extendable Fetching with Telemetry
 
-XXX is a request-over-HTTP library with two stand-out features:
+ftch is a request-over-HTTP library with two stand-out features:
 
 ### Security
 
-Often request URLs must be constructed using untrusted data. To mitigate risk of command-injection vulnerabilities, XXX uses URL templates with automatic escaping.
+Often request URLs must be constructed using untrusted data. To mitigate risk of command-injection vulnerabilities, ftch uses URL templates with automatic escaping.
 
 ### Extensibility
 
-To avoid writing boilerplate for each request, e.g. accept headers and hostnames, XXX introduces extensibility mechanisms, similar to how JavaScript functions can be partially applied. This minimizes boilerplate for each request.
+To avoid writing boilerplate for each request, e.g. accept headers and hostnames, ftch introduces extensibility mechanisms, similar to how JavaScript functions can be partially applied. This minimizes boilerplate for each request.
 
 ### Telemetry
 
-A request is like a rocket that takes off, leaving you standing on the ground wondering what's happening. Did stage 1 separate? Is it at the expected altitude? XXX allows optionally passing in an [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) to collect in-flight telemetry for each request.
+A request is like a rocket that takes off, leaving you standing on the ground wondering what's happening. Did stage 1 separate? Is it at the expected altitude? ftch allows optionally passing in an [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) to collect in-flight telemetry for each request.
 
 ## API
 
@@ -48,7 +48,7 @@ Optional. Options include:
  * **successOnly**: If true, reject the promise for all but 2xx range response status codes (after redirects are followed). Default true.
  * **method**: HTTP method to use. Default `'GET'`. Uppercase enforced.
  * **query**: An object containing querystring parameters that will be added to the request URL.
- * **telemetry**: A node [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) object which you provide. XXX will emit events on this object for the progress and timing of the request. It's then your responsibility to listen for `'progress'` events on this object.
+ * **telemetry**: A node [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) object which you provide. ftch will emit events on this object for the progress and timing of the request. It's then your responsibility to listen for `'progress'` events on this object.
  * **requestOpts** Optional options object which is merged into the options passed to `http.request` or `https.request`.
 
 ### `fetch.extend(urlTemplate, params, options)`
@@ -56,7 +56,7 @@ Optional. Options include:
 Returns a function with extended defaults. Let's consider these scenarios:
 
 ```js
-const parent = require('XXX');
+const parent = require('ftch');
 
 // scenario 1
 parent(url, params, opts);
