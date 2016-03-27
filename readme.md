@@ -49,6 +49,7 @@ Optional. Options include:
  * **method**: HTTP method to use. Default `'GET'`. Uppercase enforced.
  * **query**: An object containing querystring parameters that will be added to the request URL.
  * **telemetry**: A node [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) object which you provide. XXX will emit events on this object for the progress and timing of the request. It's then your responsibility to listen for `'progress'` events on this object.
+ * **requestOpts** Optional options object which is merged into the options passed to `http.request` or `https.request`.
 
 ### `fetch.extend(urlTemplate, params, options)`
 
@@ -122,3 +123,4 @@ Here are how each option is merged.
  * **method**: overwrite
  * **query**: object-assign
  * **telemetry**: array-push
+ * **requestOpts**: object-assign

@@ -20,7 +20,7 @@ module.exports = function fetch(urlTpl, params, opts, telemetry) {
     return request(reqOpts, opts.body, telemetry);
   }).then(resp => {
     return opts.followRedirects
-      ? followRedirects(resp, opts.events, telemetry)
+      ? followRedirects(resp, telemetry)
       : resp;
   }).then(resp => {
     telemetry.set('status', resp.statusCode);
@@ -103,12 +103,12 @@ function collect(readable) {
 }
 
 function getRequestOpts(pUrl, opts, headers) {
-  return {
+  return Object.assign({}, opts.requestOpts, {
     protocol: pUrl.protocol,
     hostname: pUrl.hostname,
     port: pUrl.port,
     method: opts.method || 'GET',
     path: pUrl.path,
     headers: headers,
-  };
+  });
 }
