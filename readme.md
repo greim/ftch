@@ -1,4 +1,4 @@
-**Warning, Experimental** I haven't written tests or anything for this yet, and it almost certainly won't work if you try to use it. Check back soon.
+**Warning, Experimental** Still writing tests, so not all features may work yet. Check back soon!
 
 # ftch - Secure, Extendable Fetching with Telemetry
 
