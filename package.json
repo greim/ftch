@@ -1,7 +1,7 @@
 {
   "name": "ftch",
   "version": "0.1.1",
-  "description": "Extendable Fetch",
+  "description": "Secure, extendable fetching with telemetry",
   "main": "src/index.js",
   "scripts": {
     "test": "mocha $(find src -name \"*.test.js\")"
