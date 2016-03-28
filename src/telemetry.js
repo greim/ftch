@@ -22,7 +22,8 @@ class Telemetry {
   }
 
   emit(event) {
-    if (this._data.opts.telemetry) {
+    const tel = this._data.opts.telemetry;
+    if (tel) {
       const abs = Date.now();
       let initTime = this._initTime;
       if (!initTime) {
@@ -30,7 +31,11 @@ class Telemetry {
       }
       const rel = abs - initTime;
       this._history.push({ event, abs, rel });
-      this._data.opts.telemetry.emit('progress', event, this._data, this._history);
+      if (typeof tel === 'function') {
+        tel(event, this._data, this._history);
+      } else if (typeof tel.emit === 'function') {
+        tel.emit(event, this._data, this._history);
+      }
     }
   }
 }

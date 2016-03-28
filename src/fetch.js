@@ -36,6 +36,7 @@ module.exports = function fetch(urlTpl, params, opts, telemetry) {
     } else if (opts.as === 'buffer') {
       return bufferify(resp, telemetry);
     } else if (!opts.as || opts.as === 'stream') {
+      telemetry.emit('done');
       return resp;
     } else {
       const err = new Error(`'${opts.as}' is not a valid value for 'as'`);
@@ -72,6 +73,7 @@ function textify(resp, telemetry) {
     const str = buffer.toString('utf8');
     telemetry.set('responseBody', str);
     telemetry.emit('buffered');
+    telemetry.emit('done');
     return str;
   });
 }
@@ -83,6 +85,7 @@ function jsonify(resp, telemetry) {
     const obj = JSON.parse(str);
     telemetry.set('responseBody', obj);
     telemetry.emit('buffered');
+    telemetry.emit('done');
     return obj;
   });
 }
@@ -92,6 +95,7 @@ function bufferify(resp, telemetry) {
     const buffer = Buffer.concat(chunks);
     telemetry.set('responseBody', buffer);
     telemetry.emit('buffered');
+    telemetry.emit('done');
     return buffer;
   });
 }

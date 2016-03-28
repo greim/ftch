@@ -1,55 +1,83 @@
 # ftch - Secure, Extendable Fetching with Telemetry
 
-ftch is a request-over-HTTP library with two stand-out features:
+ftch is a library that does HTTP requests.
 
 ### Security
 
-Often request URLs must be constructed using untrusted data. To mitigate risk of command-injection vulnerabilities, ftch uses URL templates with automatic escaping.
+Request URLs are typically constructed dynamically. To mitigate risk of command-injection attacks, ftch uses URL templates with automatic escaping.
+
+```js
+fetch('http://api.example.com/api/users/:id', {
+  id: untrustedParams.id
+}).then(user => ...);
+```
 
 ### Extensibility
 
-To avoid writing boilerplate for each request, e.g. accept headers and hostnames, ftch introduces extensibility mechanisms, similar to how JavaScript functions can be partially applied. This minimizes boilerplate for each request.
+ftch's extensibility mechanism helps minimize boilerplate.
+
+```js
+// declare boilerplate here...
+const getComments = fetch.extend('http://api.example.com/api/posts/:postId/comments?from=:from&to=:to&sort=:sort&order=:order', {
+  from: 0,
+  to: 20,
+  sort: 'created_at',
+  order: 'asc',
+}, {
+  as: 'json',
+});
+
+// elsewhere...
+getComments({ postId: params.postId })
+.then(comments => ...);
+```
 
 ### Telemetry
 
-A request is like a rocket that takes off, leaving you standing on the ground wondering what's happening. Did stage 1 separate? Is it at the expected altitude? ftch allows optionally passing in an [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) to collect in-flight telemetry for each request.
+ftch allows optionally passing in a function or [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) to collect in-flight telemetry for each request.
+
+```js
+const telemetry = new EventEmitter();
+telemetry.on('done', (data, history) => { console.log(...); });
+const api = fetch.extend('http://localhost/api/', null, { telemetry });
+```
 
 ## API
 
 ### `fetch(urlTemplate, params, options)`
 
-Makes an HTTP(S) request and returns a promise, which resolves to either a string, buffer, JSON object, or response stream (default), depending on the `options` object that is passed in.
+Makes an HTTP(S) request and returns a promise. By default the returned promise resolves to a Node.js response stream, AKA an [http.IncomingMessage](https://nodejs.org/dist/latest-v4.x/docs/api/http.html#http_class_http_incomingmessage). Optionally, it can be made to resolve directly to a buffer, string, or JSON object. Arguments are described below.
 
 #### `urlTemplate`
 
-Optional URL template string. If provided, it will be a URL pattern capturing zero or more named variables. Examples of valid URL patterns include:
+Optional URL template string. If provided, it will be a URL pattern capturing zero or more named variables, for example `:id` or `:version`. URL patterns may optionally include scheme, host and port, but named variables may only exist in the path portion of the URL. Examples:
 
  * https://example.com/api/:version/
  * /users/:id
  * /posts/:id/comments?from=:from&to=:to
 
-At request time, the given URL template is executed against the `params` object, described below. All params declared in the URL template must be provided, otherwise the promise will be rejected.
+At request time, it's executed against the `params` argument, described below. Note that *all* params declared in the URL template must be provided, otherwise the promise will be rejected.
 
 #### `params`
 
-Optional params object. If the `urlTemplate` contains any variables, this argument must be an object whose properties match every template variable. Values are coerced to strings and URL-encoded. `null` and `undefined` are converted to empty strings.
+Optional params object. If `urlTemplate` (described above) contains any free variables, this argument must be an object whose properties match all those variables. Values are coerced to strings and URL-encoded. `null` and `undefined` are treated as empty strings.
 
 #### `options`
 
-Optional. Options include:
+All options are optional, and the overall `options` object is also optional. Here are the available options:
 
- * **headers**: Object containing HTTP headers. Defaults to an empty object.
- * **body**: Either null, buffer, string, object, or readable stream. Defaults to `null`.
- * **as**: Either `'text'`, `'json'`, `'buffer'`, or `'stream'`.
- * **followRedirects**: If true, redirects will be followed. Default true.
- * **successOnly**: If true, reject the promise for all but 2xx range response status codes (after redirects are followed). Default true.
- * **method**: HTTP method to use. Default `'GET'`. Uppercase enforced.
- * **query**: An object containing querystring parameters that will be added to the request URL.
- * **telemetry**: A node [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) object which you provide. ftch will emit events on this object for the progress and timing of the request. It's then your responsibility to listen for `'progress'` events on this object.
+ * **headers**: Object containing HTTP headers.
+ * **body**: The request body. Either a buffer, string, object, or readable stream.
+ * **as**: The type of thing you want the promise to resolve to. Allowed values include `'text'`, `'json'`, `'buffer'`, or `'stream'` (default).
+ * **followRedirects**: If true, redirects will be followed. Defaults to `true`.
+ * **successOnly**: If true, reject the promise for all but 2xx range response status codes (after redirects are followed). Default to `true`.
+ * **method**: HTTP method to use. Defaults to `'GET'`.
+ * **query**: An object containing query string params that will be added to the request URL. If the request URL already contains a query string, these will be merged in.
+ * **telemetry**: A node [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) object which you provide. ftch will emit events on this object for the progress and timing of the request. It's then your responsibility to listen for events on this object.
 
 ### `fetch.extend(urlTemplate, params, options)`
 
-Returns a function with extended defaults. Let's consider these scenarios:
+Returns a function with extended defaults. Consider these scenarios:
 
 ```js
 const parent = require('ftch');
@@ -64,33 +92,22 @@ const child = parent.extend(url, params, opts);
 child(url, params, opts);
 ```
 
-When `parent` is called in scenario 1, the given `(url, params, opts)` is merged into a set of global defaults, using the *merge algorithm* described below. The merged configuration data is used to make the request and then discarded.
+When `parent` is called in scenario 1, the given `(url, params, opts)` is merged into a set of global defaults, using the *merge algorithm* described below. The result is used to make the request and then discarded.
 
-When `parent.extend` is called in scenario 2, the given `(url, params, opts)` is merged into the above-mentioned set of global defaults, using the above-mentioned merge algorithm. The merged configuration data is *not* discarded, but becomes the defaults for subsequent calls on `child`.
+When `parent.extend` is called in scenario 2, the given `(url, params, opts)` is merged into the above-mentioned set of global defaults, using the above-mentioned merge algorithm. The result is *not* discarded, but rather becomes defaults for subsequent calls on `child`.
 
-When `child` is called in scenario 3, the given `(url, params, opts)` is merged into the above-mentioned child defaults. The merged configuration data is used to make the request and then discarded.
+When `child` is called in scenario 3, the given `(url, params, opts)` is merged into the above-mentioned child defaults. The result is used to make the request and then discarded.
 
-The same happens each time `extend` is called.
+The chain continues as `extend` is called on subsequent children.
 
 #### The Merge Algorithm
 
 #### `urlTemplate1 <= urlTemplate2`
 
-Since URL templates are valid URLs, [node's URL resolution algorithm](https://nodejs.org/dist/latest-v4.x/docs/api/url.html#url_url_resolve_from_to) is used to perform this merge:
+Since URL templates are valid URLs, [node's URL resolution algorithm](https://nodejs.org/dist/latest-v4.x/docs/api/url.html#url_url_resolve_from_to) is used here:
 
 ```js
 const mergedUrl = url.resolve(urlTemplate1, urlTemplate2);
-```
-
-Examples:
-
-```
-https://foo.com/ <= api/users/:id == https://foo.com/api/users/:id
-https://foo.com/bar <= api/users/:id == https://foo.com/api/users/:id
-https://foo.com/bar/ <= api/users/:id == https://foo.com/bar/api/users/:id
-https://foo.com/bar/ <= /api/users/:id == https://foo.com/api/users/:id
-https://foo.com/ <= https://bar.com/ == https://bar.com/
-https://foo.com/ <= //bar.com/ == https://bar.com/
 ```
 
 #### `params1 <= params2`
@@ -103,13 +120,13 @@ const mergedParams = Object.assign({}, params1, params2);
 
 #### `options1 <= options2`
 
-Options merge one of three ways:
+Options merge using one of three strategies:
 
- * **overwrite**: The *next* val replaces the *prev* one. The *next* val is then used.
- * **array-push**: The *next* val is pushed onto an array containing all *prev* values. The entire array is then used.
- * **object-assign**: The *next* and *prev* vals are objects. The standard JavaScript object assign algorithm is used to produce a merged object, which is then used.
+ * **overwrite**: *next* replaces *prev*.
+ * **object-assign**: Object assign *prev* <= *next*.
+ * **array-push**: *next* is pushed onto an array containing all *prev* values.
 
-Here are how each option is merged.
+Here's how each option gets merged:
 
  * **headers**: object-assign
  * **body**: overwrite
@@ -120,19 +137,4 @@ Here are how each option is merged.
  * **query**: object-assign
  * **telemetry**: array-push
 
-Additionally, any of these properties found on the options object are passed directly through to the underlying node.js request:
-
- * family
- * auth
- * agent
- * pfx
- * key
- * passphrase
- * cert
- * ca
- * ciphers
- * rejectUnauthorized
- * secureProtocol
- * servername
-
-See documentation for [http.request](https://nodejs.org/dist/latest-v4.x/docs/api/http.html#http_http_request_options_callback) and [https.request](https://nodejs.org/dist/latest-v4.x/docs/api/https.html#https_https_request_options_callback).
+Additionally, any of the following properties found on the options object are passed through to the underlying node.js request: `family`, `auth`, `agent`, `pfx`, `key`, `passphrase`, `cert`, `ca`, `ciphers`, `rejectUnauthorized`, `secureProtocol`, and `servername`. Docs for these can be found [here](https://nodejs.org/dist/latest-v4.x/docs/api/http.html#http_http_request_options_callback) and [here](https://nodejs.org/dist/latest-v4.x/docs/api/https.html#https_https_request_options_callback). All of these extend using the above-mentioned *overwrite* strategy.
