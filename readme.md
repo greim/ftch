@@ -1,5 +1,3 @@
-**Warning, Experimental** Still writing tests, so not all features may work yet. Check back soon!
-
 # ftch - Secure, Extendable Fetching with Telemetry
 
 ftch is a request-over-HTTP library with two stand-out features:
@@ -20,22 +18,21 @@ A request is like a rocket that takes off, leaving you standing on the ground wo
 
 ### `fetch(urlTemplate, params, options)`
 
-Makes an HTTP(S) request and returns a promise, which resolves to either a string, buffer, JSON object, or response object, depending on the `options` object that is passed in.
+Makes an HTTP(S) request and returns a promise, which resolves to either a string, buffer, JSON object, or response stream (default), depending on the `options` object that is passed in.
 
 #### `urlTemplate`
 
 Optional URL template string. If provided, it will be a URL pattern capturing zero or more named variables. Examples of valid URL patterns include:
 
- * https://example.com/
- * /api/:version/
+ * https://example.com/api/:version/
  * /users/:id
  * /posts/:id/comments?from=:from&to=:to
 
-At request time, the given URL template is executed against the `params` object, described below. All params declared in the URL template must be provided, otherwise the request promise will be rejected.
+At request time, the given URL template is executed against the `params` object, described below. All params declared in the URL template must be provided, otherwise the promise will be rejected.
 
 #### `params`
 
-Optional params object. If the `urlTemplate` contains any variables, this argument must be an object whose properties must match every template variable. Values will be coerced to strings and URL-encoded. `null` and `undefined` will be treated as empty strings.
+Optional params object. If the `urlTemplate` contains any variables, this argument must be an object whose properties match every template variable. Values are coerced to strings and URL-encoded. `null` and `undefined` are converted to empty strings.
 
 #### `options`
 
@@ -49,7 +46,6 @@ Optional. Options include:
  * **method**: HTTP method to use. Default `'GET'`. Uppercase enforced.
  * **query**: An object containing querystring parameters that will be added to the request URL.
  * **telemetry**: A node [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) object which you provide. ftch will emit events on this object for the progress and timing of the request. It's then your responsibility to listen for `'progress'` events on this object.
- * **requestOpts** Optional options object which is merged into the options passed to `http.request` or `https.request`.
 
 ### `fetch.extend(urlTemplate, params, options)`
 
@@ -123,4 +119,20 @@ Here are how each option is merged.
  * **method**: overwrite
  * **query**: object-assign
  * **telemetry**: array-push
- * **requestOpts**: object-assign
+
+Additionally, any of these properties found on the options object are passed directly through to the underlying node.js request:
+
+ * family
+ * auth
+ * agent
+ * pfx
+ * key
+ * passphrase
+ * cert
+ * ca
+ * ciphers
+ * rejectUnauthorized
+ * secureProtocol
+ * servername
+
+See documentation for [http.request](https://nodejs.org/dist/latest-v4.x/docs/api/http.html#http_http_request_options_callback) and [https.request](https://nodejs.org/dist/latest-v4.x/docs/api/https.html#https_https_request_options_callback).

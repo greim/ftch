@@ -64,6 +64,13 @@ describe('fetch', () => {
       });
     });
 
+    it('should fetch a url with a param in a query string', () => {
+      return fetch(`http://localhost:${port}/doo?foo=:id`, { id: 'xyz' })
+      .then(resp => {
+        assert(resp.headers['x-foo-url'] === '/doo?foo=xyz');
+      });
+    });
+
     it('should escape a param', () => {
       return fetch(`http://localhost:${port}/:id`, { id: ' ' })
       .then(resp => {
@@ -204,10 +211,46 @@ describe('fetch', () => {
 
     it('should fetch over https', () => {
       return fetch(`https://localhost:${port2}/`, {}, {
-        requestOpts: { rejectUnauthorized: false }
+        rejectUnauthorized: false
       })
       .then(resp => {
         assert(resp.statusCode === 200);
+      });
+    });
+
+    it('should add query params', () => {
+      return fetch(`http://localhost:${port}/`, {}, {
+        query: { foo: 'bar' }
+      })
+      .then(resp => {
+        assert.strictEqual(resp.headers['x-foo-url'], '/?foo=bar');
+      });
+    });
+
+    it('should mix query params', () => {
+      return fetch(`http://localhost:${port}/?baz=qux`, {}, {
+        query: { foo: 'bar' }
+      })
+      .then(resp => {
+        assert.strictEqual(resp.headers['x-foo-url'], '/?baz=qux&foo=bar');
+      });
+    });
+
+    it('should convert null query params to empty string', () => {
+      return fetch(`http://localhost:${port}/`, {}, {
+        query: { foo: null }
+      })
+      .then(resp => {
+        assert.strictEqual(resp.headers['x-foo-url'], '/?foo=');
+      });
+    });
+
+    it('should convert undefined query params to empty string', () => {
+      return fetch(`http://localhost:${port}/`, {}, {
+        query: { foo: undefined }
+      })
+      .then(resp => {
+        assert.strictEqual(resp.headers['x-foo-url'], '/?foo=');
       });
     });
   });
@@ -224,11 +267,84 @@ describe('fetch', () => {
       .extend(`http://localhost:${port}/:id`);
     });
 
-    it('extended fetchers should fetch', () => {
+    it('should allow omitting URL', () => {
       const child = fetch.extend(`http://localhost:${port}/:id`);
       return child({ id: '234' })
       .then(resp => {
         assert(resp.headers['x-foo-url'] === '/234');
+      });
+    });
+
+    it('should resolve a protocol-relative URL', () => {
+      const child = fetch.extend(`http://localhost:${port}/`);
+      return child(`//localhost:${port}/`)
+      .then(resp => {
+        assert(resp.headers['x-foo-url'] === '/');
+      });
+    });
+
+    it('should resolve a root-relative URL', () => {
+      const child = fetch.extend(`http://localhost:${port}/`);
+      return child('/foo/bar')
+      .then(resp => {
+        assert(resp.headers['x-foo-url'] === '/foo/bar');
+      });
+    });
+
+    it('should resolve a path-relative URL with a slash', () => {
+      const child = fetch.extend(`http://localhost:${port}/foo/`);
+      return child('foo/bar')
+      .then(resp => {
+        assert(resp.headers['x-foo-url'] === '/foo/foo/bar');
+      });
+    });
+
+    it('should resolve a path-relative URL without a slash', () => {
+      const child = fetch.extend(`http://localhost:${port}/foo`);
+      return child('foo/bar')
+      .then(resp => {
+        assert(resp.headers['x-foo-url'] === '/foo/bar');
+      });
+    });
+
+    it('should extend "as"', () => {
+      const child = fetch.extend(`http://localhost:${port}/`, {}, { as: 'text' });
+      return child('foo/bar')
+      .then(str => {
+        assert(typeof str === 'string');
+      });
+    });
+
+    it('should extend "successOnly"', () => {
+      const child = fetch.extend(`http://localhost:${port}/`, {}, { successOnly: 'false' });
+      return child('foo/bar', {}, { headers: { 'x-status': 500 } })
+      .then(() => {
+        assert(false, 'nope');
+      }, () => {});
+    });
+
+    it('should extend "successOnly" two levels down', () => {
+      const child = fetch.extend(`http://localhost:${port}/`, {}, { successOnly: 'false' });
+      const grandChild = child.extend('/foo');
+      return grandChild({}, { headers: { 'x-status': 500 } })
+      .then(() => {
+        assert(false, 'nope');
+      }, () => {});
+    });
+
+    it('should extend params', () => {
+      const child = fetch.extend(`http://localhost:${port}/:foo/:bar`, { foo: 1 });
+      return child({ bar: 2 })
+      .then((resp) => {
+        assert(resp.headers['x-foo-url'] === '/1/2');
+      });
+    });
+
+    it('should extend query params', () => {
+      const child = fetch.extend(`http://localhost:${port}/`, {}, { query: { foo: 'bar' } });
+      return child({ bar: 2 }, { query: { baz: 'qux' } })
+      .then((resp) => {
+        assert(resp.headers['x-foo-url'] === '/?foo=bar&baz=qux');
       });
     });
   });

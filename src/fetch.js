@@ -6,12 +6,14 @@ const request = require('./request');
 const followRedirects = require('./follow-redirects');
 const spatts = require('./status-patterns');
 const urlTemplate = require('./url-template');
+const querystring = require('querystring');
 
 const alrighty = Promise.resolve();
 
 module.exports = function fetch(urlTpl, params, opts, telemetry) {
   return alrighty.then(() => {
-    const url = urlTemplate(urlTpl, params);
+    let url = urlTemplate(urlTpl, params);
+    url = addQuery(url, opts.query);
     const pUrl = urlTools.parse(url);
     const headers = opts.headers;
     telemetry.set('requestHeaders', headers);
@@ -33,8 +35,11 @@ module.exports = function fetch(urlTpl, params, opts, telemetry) {
       return jsonify(resp, telemetry);
     } else if (opts.as === 'buffer') {
       return bufferify(resp, telemetry);
-    } else {
+    } else if (!opts.as || opts.as === 'stream') {
       return resp;
+    } else {
+      const err = new Error(`'${opts.as}' is not a valid value for 'as'`);
+      throw err;
     }
   });
 };
@@ -53,7 +58,7 @@ function checkSuccess(resp) {
     } else if (spatts.client.test(status)) {
       message = `Provisional ${status}: ${statusMessage}`;
     } else {
-      message = `Unknown status ${status}: ${statusMessage}`;
+      message = `Unknown status: ${status} ${statusMessage}`;
     }
     const err = new Error(message);
     err.status = status;
@@ -103,12 +108,45 @@ function collect(readable) {
 }
 
 function getRequestOpts(pUrl, opts, headers) {
-  return Object.assign({}, opts.requestOpts, {
+  const result = {
     protocol: pUrl.protocol,
     hostname: pUrl.hostname,
     port: pUrl.port,
     method: opts.method || 'GET',
     path: pUrl.path,
     headers: headers,
-  });
+    rejectUnauthorized: opts.rejectUnauthorized,
+  };
+  for (const prop of passThruOpts) {
+    if (opts.hasOwnProperty(prop)) {
+      result[prop] = opts[prop];
+    }
+  }
+  return result;
 }
+
+function addQuery(url, query) {
+  if (!query) {
+    return url;
+  } else {
+    const pUrl = urlTools.parse(url, true);
+    const fullQuery = Object.assign(pUrl.query, query);
+    pUrl.search = querystring.stringify(fullQuery);
+    return urlTools.format(pUrl);
+  }
+}
+
+const passThruOpts = [
+  'family',
+  'auth',
+  'agent',
+  'pfx',
+  'key',
+  'passphrase',
+  'cert',
+  'ca',
+  'ciphers',
+  'rejectUnauthorized',
+  'secureProtocol',
+  'servername',
+];

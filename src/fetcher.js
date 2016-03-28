@@ -47,7 +47,6 @@ function extendArgs(parent, child) {
   merged.opts = Object.assign({}, parent.opts, child.opts);
   merged.opts.headers = Object.assign({}, parent.opts.headers, child.opts.headers);
   merged.opts.query = Object.assign({}, parent.opts.query, child.opts.query);
-  merged.opts.requestOpts = Object.assign({}, parent.opts.requestOpts, child.opts.requestOpts);
   const parTel = getAsArr(parent.telemetry);
   const chiTel = getAsArr(child.telemetry);
   merged.telemetry = parTel.concat(chiTel);

@@ -7,13 +7,7 @@ const _ = require('lodash');
 class Template {
 
   constructor(tplStr) {
-    let pUrl;
-    if (tplStr.startsWith('//')) {
-      pUrl = urlTools.parse('http:' + tplStr);
-      pUrl.protocol = null;
-    } else {
-      pUrl = urlTools.parse(tplStr);
-    }
+    const pUrl = urlTools.parse(tplStr, false, true);
     const path = pUrl.path;
     pUrl.path = null;
     pUrl.pathname = null;

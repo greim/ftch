@@ -8,5 +8,4 @@ module.exports = Object.freeze({
   telemetry: null,
   headers: Object.freeze({}),
   query: {},
-  requestOpts: {},
 });
