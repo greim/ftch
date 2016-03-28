@@ -14,6 +14,7 @@
     "string-to-stream": "^1.0.1"
   },
   "dependencies": {
+    "content-type": "^1.0.1",
     "express-uri-template": "^0.1.0",
     "lodash": "^4.6.1"
   }

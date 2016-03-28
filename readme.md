@@ -7,7 +7,7 @@ ftch is a library that does HTTP requests.
 Request URLs are typically constructed dynamically. To mitigate risk of command-injection attacks, ftch uses URL templates with automatic escaping.
 
 ```js
-fetch('http://api.example.com/api/users/:id', {
+fetch('https://api.example.com/api/users/:id', {
   id: untrustedParams.id
 }).then(user => ...);
 ```
@@ -18,7 +18,7 @@ ftch's extensibility mechanism helps minimize boilerplate.
 
 ```js
 // declare boilerplate here...
-const getComments = fetch.extend('http://api.example.com/api/posts/:postId/comments?from=:from&to=:to&sort=:sort&order=:order', {
+const getComments = fetch.extend('https://api.example.com/api/posts/:postId/comments?from=:from&to=:to&sort=:sort&order=:order', {
   from: 0,
   to: 20,
   sort: 'created_at',
@@ -34,12 +34,12 @@ getComments({ postId: params.postId })
 
 ### Telemetry
 
-ftch allows optionally passing in a function or [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) to collect in-flight telemetry for each request.
+ftch allows optionally passing in an [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) to collect in-flight telemetry for each request.
 
 ```js
 const telemetry = new EventEmitter();
-telemetry.on('done', (data, history) => { console.log(...); });
-const api = fetch.extend('http://localhost/api/', null, { telemetry });
+telemetry.on('done', (data, history) => { console.log(history); });
+const api = fetch.extend('https://localhost/api/', null, { telemetry });
 ```
 
 ## API

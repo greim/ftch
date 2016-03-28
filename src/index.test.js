@@ -2,45 +2,14 @@
 'use strict';
 
 const assert = require('assert');
-const http = require('http');
-const https = require('https');
 const fetch = require('.');
 const s2s = require('string-to-stream');
-const fs = require('fs');
+const testServer = require('../test-data/test-server');
 
-const handler = (rq, rs) => {
-  const status = parseInt(rq.headers['x-status'] || '200', 10);
-  rs.writeHead(status, {
-    'x-foo-headers': JSON.stringify(rq.headers),
-    'x-foo-url': rq.url,
-    'x-foo-method': rq.method
-  });
-  rq.pipe(rs);
-};
-const key = fs.readFileSync(__dirname + '/../test-data/fake-key.pem'); // eslint-disable-line no-sync
-const cert = fs.readFileSync(__dirname + '/../test-data/fake-cert.pem'); // eslint-disable-line no-sync
-const options = { key, cert };
-const server = http.createServer(handler).listen();
-const server2 = https.createServer(options, handler).listen();
-const addr = server.address();
-const port = addr.port;
-const addr2 = server2.address();
-const port2 = addr2.port;
-
-const rServer = http.createServer(rHandler).listen();
-const rAddr = rServer.address();
-const redirectPort = rAddr.port;
-function rHandler(rq, rs) {
-  if (/^\/[\d]+/.test(rq.url)) {
-    let num = parseInt(rq.url.substring(1), 10);
-    num--;
-    rs.writeHead(301, { location: `http://localhost:${redirectPort}/${num}` });
-    rs.end('');
-  } else {
-    rs.writeHead(200, {});
-    rs.end('');
-  }
-}
+const server = testServer();
+const port = server.httpAddr.port;
+const port2 = server.httpsAddr.port;
+const redirectPort = server.redirectAddr.port;
 
 describe('fetch', () => {
 
@@ -53,28 +22,28 @@ describe('fetch', () => {
     it('should fetch a url', () => {
       return fetch(`http://localhost:${port}/`)
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/');
+        assert(resp.headers['x-url'] === '/');
       });
     });
 
     it('should fetch a url with a param', () => {
       return fetch(`http://localhost:${port}/:id`, { id: 'xyz' })
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/xyz');
+        assert(resp.headers['x-url'] === '/xyz');
       });
     });
 
     it('should fetch a url with a param in a query string', () => {
       return fetch(`http://localhost:${port}/doo?foo=:id`, { id: 'xyz' })
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/doo?foo=xyz');
+        assert(resp.headers['x-url'] === '/doo?foo=xyz');
       });
     });
 
     it('should escape a param', () => {
       return fetch(`http://localhost:${port}/:id`, { id: ' ' })
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/%20');
+        assert(resp.headers['x-url'] === '/%20');
       });
     });
 
@@ -223,7 +192,7 @@ describe('fetch', () => {
         query: { foo: 'bar' }
       })
       .then(resp => {
-        assert.strictEqual(resp.headers['x-foo-url'], '/?foo=bar');
+        assert.strictEqual(resp.headers['x-url'], '/?foo=bar');
       });
     });
 
@@ -232,7 +201,7 @@ describe('fetch', () => {
         query: { foo: 'bar' }
       })
       .then(resp => {
-        assert.strictEqual(resp.headers['x-foo-url'], '/?baz=qux&foo=bar');
+        assert.strictEqual(resp.headers['x-url'], '/?baz=qux&foo=bar');
       });
     });
 
@@ -241,7 +210,7 @@ describe('fetch', () => {
         query: { foo: null }
       })
       .then(resp => {
-        assert.strictEqual(resp.headers['x-foo-url'], '/?foo=');
+        assert.strictEqual(resp.headers['x-url'], '/?foo=');
       });
     });
 
@@ -250,7 +219,7 @@ describe('fetch', () => {
         query: { foo: undefined }
       })
       .then(resp => {
-        assert.strictEqual(resp.headers['x-foo-url'], '/?foo=');
+        assert.strictEqual(resp.headers['x-url'], '/?foo=');
       });
     });
   });
@@ -271,7 +240,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/:id`);
       return child({ id: '234' })
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/234');
+        assert(resp.headers['x-url'] === '/234');
       });
     });
 
@@ -279,7 +248,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/`);
       return child(`//localhost:${port}/`)
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/');
+        assert(resp.headers['x-url'] === '/');
       });
     });
 
@@ -287,7 +256,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/`);
       return child('/foo/bar')
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/foo/bar');
+        assert(resp.headers['x-url'] === '/foo/bar');
       });
     });
 
@@ -295,7 +264,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/foo/`);
       return child('foo/bar')
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/foo/foo/bar');
+        assert(resp.headers['x-url'] === '/foo/foo/bar');
       });
     });
 
@@ -303,7 +272,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/foo`);
       return child('foo/bar')
       .then(resp => {
-        assert(resp.headers['x-foo-url'] === '/foo/bar');
+        assert(resp.headers['x-url'] === '/foo/bar');
       });
     });
 
@@ -336,7 +305,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/:foo/:bar`, { foo: 1 });
       return child({ bar: 2 })
       .then((resp) => {
-        assert(resp.headers['x-foo-url'] === '/1/2');
+        assert(resp.headers['x-url'] === '/1/2');
       });
     });
 
@@ -344,7 +313,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/`, {}, { query: { foo: 'bar' } });
       return child({ bar: 2 }, { query: { baz: 'qux' } })
       .then((resp) => {
-        assert(resp.headers['x-foo-url'] === '/?foo=bar&baz=qux');
+        assert(resp.headers['x-url'] === '/?foo=bar&baz=qux');
       });
     });
   });

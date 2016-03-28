@@ -2,32 +2,16 @@
 'use strict';
 
 const assert = require('assert');
-const http = require('http');
-const https = require('https');
 const req = require('./request');
 const Telemetry = require('./telemetry');
 const s2s = require('string-to-stream');
-const fs = require('fs');
+const testServer = require('../test-data/test-server');
 
-const handler = (rq, rs) => {
-  rs.writeHead(200, {
-    'x-foo-headers': JSON.stringify(rq.headers),
-    'x-foo-url': rq.url,
-    'x-foo-method': rq.method
-  });
-  rq.pipe(rs);
-};
-const key = fs.readFileSync(__dirname + '/../test-data/fake-key.pem'); // eslint-disable-line no-sync
-const cert = fs.readFileSync(__dirname + '/../test-data/fake-cert.pem'); // eslint-disable-line no-sync
-const options = { key, cert };
-const server = http.createServer(handler).listen();
-const server2 = https.createServer(options, handler).listen();
-const addr = server.address();
-const hostname = addr.address;
-const port = addr.port;
-const addr2 = server2.address();
-const hostname2 = addr2.address;
-const port2 = addr2.port;
+const server = testServer();
+const hostname = server.httpAddr.address;
+const port = server.httpAddr.port;
+const hostname2 = server.httpsAddr.address;
+const port2 = server.httpsAddr.port;
 const tel = new Telemetry({opts:{}});
 
 describe('request', () => {
@@ -43,7 +27,7 @@ describe('request', () => {
       port,
       path: '/foo'
     }, null, tel).then(resp => {
-      assert.strictEqual(resp.headers['x-foo-url'], '/foo');
+      assert.strictEqual(resp.headers['x-url'], '/foo');
     });
   });
 
@@ -55,7 +39,7 @@ describe('request', () => {
       port,
       path: '/foo'
     }, null, tel).then(resp => {
-      assert.strictEqual(resp.headers['x-foo-method'], 'POST');
+      assert.strictEqual(resp.headers['x-method'], 'POST');
     });
   });
 
@@ -67,7 +51,7 @@ describe('request', () => {
       path: '/foo',
       headers: { 'x-blah': 'bar' }
     }, null, tel).then(resp => {
-      const headers = JSON.parse(resp.headers['x-foo-headers']);
+      const headers = JSON.parse(resp.headers['x-headers']);
       assert.strictEqual(headers['x-blah'], 'bar');
     });
   });

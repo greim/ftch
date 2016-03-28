@@ -7,6 +7,7 @@ const followRedirects = require('./follow-redirects');
 const spatts = require('./status-patterns');
 const urlTemplate = require('./url-template');
 const querystring = require('querystring');
+const getRespEncoding = require('./get-response-encoding');
 
 const alrighty = Promise.resolve();
 
@@ -37,6 +38,9 @@ module.exports = function fetch(urlTpl, params, opts, telemetry) {
       return bufferify(resp, telemetry);
     } else if (!opts.as || opts.as === 'stream') {
       telemetry.emit('done');
+      resp.buffer = bufferify.bind(null, resp);
+      resp.text = textify.bind(null, resp);
+      resp.json = jsonify.bind(null, resp);
       return resp;
     } else {
       const err = new Error(`'${opts.as}' is not a valid value for 'as'`);
@@ -70,10 +74,13 @@ function checkSuccess(resp) {
 function textify(resp, telemetry) {
   return collect(resp).then(chunks => {
     const buffer = Buffer.concat(chunks);
-    const str = buffer.toString('utf8');
-    telemetry.set('responseBody', str);
-    telemetry.emit('buffered');
-    telemetry.emit('done');
+    const enc = getRespEncoding(resp);
+    const str = buffer.toString(enc);
+    if (telemetry) {
+      telemetry.set('responseBody', str);
+      telemetry.emit('buffered');
+      telemetry.emit('done');
+    }
     return str;
   });
 }
@@ -81,11 +88,14 @@ function textify(resp, telemetry) {
 function jsonify(resp, telemetry) {
   return collect(resp).then(chunks => {
     const buffer = Buffer.concat(chunks);
-    const str = buffer.toString('utf8');
+    const enc = getRespEncoding(resp);
+    const str = buffer.toString(enc);
     const obj = JSON.parse(str);
-    telemetry.set('responseBody', obj);
-    telemetry.emit('buffered');
-    telemetry.emit('done');
+    if (telemetry) {
+      telemetry.set('responseBody', obj);
+      telemetry.emit('buffered');
+      telemetry.emit('done');
+    }
     return obj;
   });
 }
@@ -93,9 +103,11 @@ function jsonify(resp, telemetry) {
 function bufferify(resp, telemetry) {
   return collect(resp).then(chunks => {
     const buffer = Buffer.concat(chunks);
-    telemetry.set('responseBody', buffer);
-    telemetry.emit('buffered');
-    telemetry.emit('done');
+    if (telemetry) {
+      telemetry.set('responseBody', buffer);
+      telemetry.emit('buffered');
+      telemetry.emit('done');
+    }
     return buffer;
   });
 }
