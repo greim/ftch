@@ -37,8 +37,9 @@ api('users/:id', { id: params.id })
 ftch allows optionally passing in an [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) to collect in-flight telemetry for each request.
 
 ```js
+// log the progress of every completed request
 const telemetry = new EventEmitter();
-telemetry.on('done', (data, history) => { console.log(history); });
+telemetry.on('request-end', (data, history) => { console.log(history); });
 const api = fetch.extend('https://localhost/api/', null, { telemetry });
 ```
 

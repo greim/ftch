@@ -18,7 +18,7 @@ module.exports = function fetch(urlTpl, params, opts, telemetry) {
     const pUrl = urlTools.parse(url);
     const headers = opts.headers;
     telemetry.set('requestHeaders', headers);
-    telemetry.emit('start');
+    telemetry.emit('request-start');
     const reqOpts = getRequestOpts(pUrl, opts, headers);
     return request(reqOpts, opts.body, telemetry);
   }).then(resp => {
@@ -37,7 +37,7 @@ module.exports = function fetch(urlTpl, params, opts, telemetry) {
     } else if (opts.as === 'buffer') {
       return bufferify(resp, telemetry);
     } else if (!opts.as || opts.as === 'stream') {
-      telemetry.emit('done');
+      telemetry.emit('request-end');
       resp.buffer = bufferify.bind(null, resp);
       resp.text = textify.bind(null, resp);
       resp.json = jsonify.bind(null, resp);
@@ -79,7 +79,7 @@ function textify(resp, telemetry) {
     if (telemetry) {
       telemetry.set('responseBody', str);
       telemetry.emit('buffered');
-      telemetry.emit('done');
+      telemetry.emit('request-end');
     }
     return str;
   });
@@ -94,7 +94,7 @@ function jsonify(resp, telemetry) {
     if (telemetry) {
       telemetry.set('responseBody', obj);
       telemetry.emit('buffered');
-      telemetry.emit('done');
+      telemetry.emit('request-end');
     }
     return obj;
   });
@@ -106,7 +106,7 @@ function bufferify(resp, telemetry) {
     if (telemetry) {
       telemetry.set('responseBody', buffer);
       telemetry.emit('buffered');
-      telemetry.emit('done');
+      telemetry.emit('request-end');
     }
     return buffer;
   });
