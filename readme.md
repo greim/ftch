@@ -1,10 +1,14 @@
-# ftch - Secure, Extendable Fetching with Telemetry
+# ftch :: Secure, extensible fetching with telemetry
 
-ftch is a library that does HTTP requests.
+ftch is a Node.js library for doing HTTP requests, focusing on:
+
+ 1. Security
+ 2. Extensibility
+ 3. Telemetry
 
 ### Security
 
-Request URLs are typically constructed dynamically. To mitigate risk of command-injection attacks, ftch uses URL templates with automatic escaping.
+Request URLs are often constructed dynamically. To mitigate risk of command-injection attacks, ftch uses URL templates with automatic URL-encoding.
 
 ```js
 fetch('https://api.example.com/api/users/:id', {
@@ -18,18 +22,14 @@ ftch's extensibility mechanism helps minimize boilerplate.
 
 ```js
 // declare boilerplate here...
-const getComments = fetch.extend('https://api.example.com/api/posts/:postId/comments?from=:from&to=:to&sort=:sort&order=:order', {
-  from: 0,
-  to: 20,
-  sort: 'created_at',
-  order: 'asc',
-}, {
+const api = fetch.extend('https://api.example.com/api/', {}, {
   as: 'json',
+  accept: 'application/json',
 });
 
 // elsewhere...
-getComments({ postId: params.postId })
-.then(comments => ...);
+api('users/:id', { id: params.id })
+.then(user => ...);
 ```
 
 ### Telemetry
