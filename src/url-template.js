@@ -1,6 +1,6 @@
 'use strict';
 
-const eut = require('express-uri-template');
+const urlTemplateFn = require('./url-template-fn');
 const urlTools = require('url');
 const _ = require('lodash');
 
@@ -17,7 +17,7 @@ class Template {
   }
 
   execute(data) {
-    const path = eut(this.path, data);
+    const path = urlTemplateFn(this.path, data);
     return urlTools.resolve(this.base, path);
   }
 }

@@ -65,10 +65,8 @@ describe('url-template', () => {
     assert.strictEqual(url, '/foo?bar=123');
   });
 
-  it('should require all params', () => {
-    assert.throws(() => {
-      ut('/foo?bar=:id', { x: '123' });
-    }, /unexpanded/);
+  it('should not throw on missing param', () => {
+    ut('/foo?bar=:id', { x: '123' });
   });
 
   it('should ignore unused params', () => {

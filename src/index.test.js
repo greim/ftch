@@ -22,35 +22,42 @@ describe('fetch', () => {
     it('should fetch a url', () => {
       return fetch(`http://localhost:${port}/`)
       .then(resp => {
-        assert(resp.headers['x-url'] === '/');
+        assert.strictEqual(resp.headers['x-url'] , '/');
       });
     });
 
     it('should fetch a url with a param', () => {
       return fetch(`http://localhost:${port}/:id`, { id: 'xyz' })
       .then(resp => {
-        assert(resp.headers['x-url'] === '/xyz');
+        assert.strictEqual(resp.headers['x-url'] , '/xyz');
       });
     });
 
     it('should fetch a url with a param in a query string', () => {
       return fetch(`http://localhost:${port}/doo?foo=:id`, { id: 'xyz' })
       .then(resp => {
-        assert(resp.headers['x-url'] === '/doo?foo=xyz');
+        assert.strictEqual(resp.headers['x-url'] , '/doo?foo=xyz');
       });
     });
 
     it('should escape a param', () => {
       return fetch(`http://localhost:${port}/:id`, { id: ' ' })
       .then(resp => {
-        assert(resp.headers['x-url'] === '/%20');
+        assert.strictEqual(resp.headers['x-url'] , '/%20');
+      });
+    });
+
+    it('should allow unexpanded params', () => {
+      return fetch(`http://localhost:${port}/:id`)
+      .then(resp => {
+        assert.strictEqual(resp.headers['x-url'], '/:id');
       });
     });
 
     it('should fetch as text', () => {
       return fetch(`http://localhost:${port}/`, {}, { as: 'text' })
       .then(str => {
-        assert(str === '');
+        assert.strictEqual(str , '');
       });
     });
 
@@ -58,7 +65,7 @@ describe('fetch', () => {
       const opts = { method: 'POST', as: 'text', body: 'abc' };
       return fetch(`http://localhost:${port}/`, {}, opts)
       .then(str => {
-        assert(str === 'abc');
+        assert.strictEqual(str , 'abc');
       });
     });
 
@@ -66,7 +73,7 @@ describe('fetch', () => {
       const opts = { method: 'POST', as: 'text', body: new Buffer('abc', 'utf8') };
       return fetch(`http://localhost:${port}/`, {}, opts)
       .then(str => {
-        assert(str === 'abc');
+        assert.strictEqual(str , 'abc');
       });
     });
 
@@ -74,7 +81,7 @@ describe('fetch', () => {
       const opts = { method: 'POST', as: 'text', body: s2s('abc') };
       return fetch(`http://localhost:${port}/`, {}, opts)
       .then(str => {
-        assert(str === 'abc');
+        assert.strictEqual(str , 'abc');
       });
     });
 
@@ -82,7 +89,7 @@ describe('fetch', () => {
       const opts = { method: 'POST', as: 'text', body: { foo: 2 } };
       return fetch(`http://localhost:${port}/`, {}, opts)
       .then(str => {
-        assert(str === JSON.stringify({ foo: 2 }));
+        assert.strictEqual(str , JSON.stringify({ foo: 2 }));
       });
     });
 
@@ -99,7 +106,7 @@ describe('fetch', () => {
       return fetch(`http://localhost:${port}/`, {}, opts)
       .then(buf => {
         assert(Buffer.isBuffer(buf));
-        assert(buf.toString('utf8') === 'hello');
+        assert.strictEqual(buf.toString('utf8') , 'hello');
       });
     });
 
@@ -117,7 +124,7 @@ describe('fetch', () => {
       const opts = { successOnly: false, headers: { 'x-status': 404 } };
       return fetch(`http://localhost:${port}/`, {}, opts)
       .then(resp => {
-        assert(resp.statusCode === 404);
+        assert.strictEqual(resp.statusCode , 404);
       });
     });
 
@@ -165,7 +172,7 @@ describe('fetch', () => {
       //const opts = { headers: { 'x-status': 500 } };
       return fetch(`http://localhost:${redirectPort}/3`)
       .then(resp => {
-        assert(resp.statusCode === 200);
+        assert.strictEqual(resp.statusCode , 200);
       });
     });
 
@@ -173,8 +180,8 @@ describe('fetch', () => {
       const opts = { followRedirects: false, successOnly: false };
       return fetch(`http://localhost:${redirectPort}/3`, {}, opts)
       .then(resp => {
-        assert(resp.statusCode === 301);
-        assert(resp.headers.location === `http://localhost:${redirectPort}/2`);
+        assert.strictEqual(resp.statusCode , 301);
+        assert.strictEqual(resp.headers.location , `http://localhost:${redirectPort}/2`);
       });
     });
 
@@ -183,7 +190,7 @@ describe('fetch', () => {
         rejectUnauthorized: false
       })
       .then(resp => {
-        assert(resp.statusCode === 200);
+        assert.strictEqual(resp.statusCode , 200);
       });
     });
 
@@ -240,7 +247,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/:id`);
       return child({ id: '234' })
       .then(resp => {
-        assert(resp.headers['x-url'] === '/234');
+        assert.strictEqual(resp.headers['x-url'] , '/234');
       });
     });
 
@@ -248,7 +255,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/`);
       return child(`//localhost:${port}/`)
       .then(resp => {
-        assert(resp.headers['x-url'] === '/');
+        assert.strictEqual(resp.headers['x-url'] , '/');
       });
     });
 
@@ -256,7 +263,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/`);
       return child('/foo/bar')
       .then(resp => {
-        assert(resp.headers['x-url'] === '/foo/bar');
+        assert.strictEqual(resp.headers['x-url'] , '/foo/bar');
       });
     });
 
@@ -264,7 +271,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/foo/`);
       return child('foo/bar')
       .then(resp => {
-        assert(resp.headers['x-url'] === '/foo/foo/bar');
+        assert.strictEqual(resp.headers['x-url'] , '/foo/foo/bar');
       });
     });
 
@@ -272,7 +279,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/foo`);
       return child('foo/bar')
       .then(resp => {
-        assert(resp.headers['x-url'] === '/foo/bar');
+        assert.strictEqual(resp.headers['x-url'] , '/foo/bar');
       });
     });
 
@@ -280,7 +287,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/`, {}, { as: 'text' });
       return child('foo/bar')
       .then(str => {
-        assert(typeof str === 'string');
+        assert.strictEqual(typeof str , 'string');
       });
     });
 
@@ -305,7 +312,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/:foo/:bar`, { foo: 1 });
       return child({ bar: 2 })
       .then((resp) => {
-        assert(resp.headers['x-url'] === '/1/2');
+        assert.strictEqual(resp.headers['x-url'] , '/1/2');
       });
     });
 
@@ -313,7 +320,7 @@ describe('fetch', () => {
       const child = fetch.extend(`http://localhost:${port}/`, {}, { query: { foo: 'bar' } });
       return child({ bar: 2 }, { query: { baz: 'qux' } })
       .then((resp) => {
-        assert(resp.headers['x-url'] === '/?foo=bar&baz=qux');
+        assert.strictEqual(resp.headers['x-url'] , '/?foo=bar&baz=qux');
       });
     });
   });
