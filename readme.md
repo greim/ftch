@@ -122,11 +122,18 @@ const mergedParams = Object.assign({}, params1, params2);
 
 #### `options1 <= options2`
 
-Options merge using one of three strategies:
+Options are merged individually. If the parent options are called `parent`, and the child options are called `child`, and the resulting options are called `result`, then `result.option` is derived using one of three strategies:
 
- * **overwrite**: *next* replaces *prev*.
- * **object-assign**: Object assign *prev* <= *next*.
- * **array-push**: *next* is pushed onto an array containing all *prev* values.
+```js
+// strategy = overwrite
+result.option = child.hasOwnProperty('option') ? child.option : parent.option
+
+// strategy = object-assign
+result.option = Object.assign({}, parent.option, child.option)
+
+// strategy = append
+result.option = parent.option.concat(child.option)
+```
 
 Here's how each option gets merged:
 
@@ -137,6 +144,7 @@ Here's how each option gets merged:
  * **successOnly**: overwrite
  * **method**: overwrite
  * **query**: object-assign
- * **telemetry**: array-push
+ * **telemetry**: append
+ * **requireExpanded**: overwrite
 
 Additionally, any of the following properties found on the options object are passed through to the underlying node.js request: `family`, `auth`, `agent`, `pfx`, `key`, `passphrase`, `cert`, `ca`, `ciphers`, `rejectUnauthorized`, `secureProtocol`, and `servername`. Docs for these can be found [here](https://nodejs.org/dist/latest-v4.x/docs/api/http.html#http_http_request_options_callback) and [here](https://nodejs.org/dist/latest-v4.x/docs/api/https.html#https_https_request_options_callback). All of these extend using the above-mentioned *overwrite* strategy.
