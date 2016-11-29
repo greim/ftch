@@ -42,11 +42,14 @@ describe('URL template function', function() {
   });
 
   it('allows unexpanded params', function() {
-    const params = {};
-    assertRoute('/foo/:name', '/foo/:name', params);
+    assert.strictEqual('/foo/:name', urlTemplateFn('/foo/:name', {}));
+  });
+
+  it('optionally disallows unexpanded params', function() {
+    assert.throws(() => urlTemplateFn('/foo/:name', {}, true), /There were unexpanded params/);
   });
 });
 
-function assertRoute(pattern, path, params) {
-  assert.equal(urlTemplateFn(pattern, params), path);
+function assertRoute(pattern, path, params, isExpanded) {
+  assert.equal(urlTemplateFn(pattern, params, isExpanded), path);
 }

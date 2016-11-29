@@ -57,7 +57,7 @@ Optional URL template string. If provided, it will be a URL pattern capturing ze
  * /users/:id
  * /posts/:id/comments?from=:from&to=:to
 
-At request time, it's executed against the `params` argument, described below. Note that *all* params declared in the URL template must be provided, otherwise the promise will be rejected.
+At request time, it's executed against the `params` argument, described below. Note that if params declared in the URL template don't have matching values in the `params` object, the unexpanded params will be passed through silently to the server. You may opt into stricter behavior by passing `requireExpanded: true` in `options`.
 
 #### `params`
 
@@ -74,6 +74,7 @@ All options are optional, and the overall `options` object is also optional. Her
  * **successOnly**: If true, reject the promise for all but 2xx range response status codes (after redirects are followed). Default to `true`.
  * **method**: HTTP method to use. Defaults to `'GET'`.
  * **query**: An object containing query string params that will be added to the request URL. If the request URL already contains a query string, these will be merged in.
+ * **requireExpanded**: If truthy, every `:param` in `urlTemplate` is required to have a matching value in the `params` object. By default, unexpanded params are silently passed through.
  * **telemetry**: A node [EventEmitter](https://nodejs.org/dist/latest-v4.x/docs/api/events.html#events_class_eventemitter) object which you provide. ftch will emit events on this object for the progress and timing of the request. It's then your responsibility to listen for events on this object.
 
 ### `fetch.extend(urlTemplate, params, options)`

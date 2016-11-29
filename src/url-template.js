@@ -16,8 +16,8 @@ class Template {
     this.path = path;
   }
 
-  execute(data) {
-    const path = urlTemplateFn(this.path, data);
+  execute(data, requireParams) {
+    const path = urlTemplateFn(this.path, data, requireParams);
     return urlTools.resolve(this.base, path);
   }
 }
@@ -26,7 +26,7 @@ const getTemplate = _.memoize(function(tplStr) {
   return new Template(tplStr);
 });
 
-module.exports = function(tplStr, data) {
+module.exports = function(tplStr, data, requireParams) {
   const tpl = getTemplate(tplStr);
-  return tpl.execute(data);
+  return tpl.execute(data, requireParams);
 };

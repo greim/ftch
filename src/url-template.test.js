@@ -69,6 +69,10 @@ describe('url-template', () => {
     ut('/foo?bar=:id', { x: '123' });
   });
 
+  it('should optionally throw on missing param', () => {
+    assert.throws(() => ut('/foo?bar=:id', { x: '123' }, true), /There were unexpanded params/);
+  });
+
   it('should ignore unused params', () => {
     const url = ut('/foo?bar=123', { x: '123' });
     assert.strictEqual(url, '/foo?bar=123');

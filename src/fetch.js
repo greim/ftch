@@ -13,7 +13,7 @@ const alrighty = Promise.resolve();
 
 module.exports = function fetch(urlTpl, params, opts, telemetry) {
   return alrighty.then(() => {
-    let url = urlTemplate(urlTpl, params);
+    let url = urlTemplate(urlTpl, params, opts.requireExpanded);
     url = addQuery(url, opts.query);
     const pUrl = urlTools.parse(url);
     const headers = opts.headers;

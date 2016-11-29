@@ -54,6 +54,12 @@ describe('fetch', () => {
       });
     });
 
+    it('should optionally disallow unexpanded params', () => {
+      return fetch(`http://localhost:${port}/:id`, {}, { requireExpanded: true })
+      .catch(err => err.message)
+      .then(mess => assert.ok(/There were unexpanded params/.test(mess)));
+    });
+
     it('should fetch as text', () => {
       return fetch(`http://localhost:${port}/`, {}, { as: 'text' })
       .then(str => {
